@@ -11,5 +11,6 @@
   roles:
     - vagrant_setup
     - docker
+    - dev_tools
 
   

@@ -1,18 +1,105 @@
 ---
-# Terraform
-# AWS CLI
-# Go
-# Ansible
-# VSCode
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - python3-debian
+      - python3-venv
+      - python3-pip
+    state: present
+
+- name: Check if Go is installed
+  ansible.builtin.stat:
+    path: /usr/local/go/bin/go
+  register: go_bin
 
 - name: Download Go binary
   ansible.builtin.get_url:
-    url: https://go.dev/dl/go1.25.5.linux-amd64.tar.gz
-    dest: /usr/local/
+    url: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
+    dest: /tmp/go.tar.gz
+  when: not go_bin.stat.exists
 
-- name: Update /etc/environment
-  lineinfile:
-    dest: /etc/environment
-    line: "PATH=$PATH:{{ item }}"
+- name: Extract Go binary
+  ansible.builtin.unarchive:
+    src: /tmp/go.tar.gz
+    dest: /usr/local
+    remote_src: yes
+  when: not go_bin.stat.exists
+
+- name: Check if Terraform is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/terraform
+  register: tf_bin
+
+- name: Download Terraform binary
+  ansible.builtin.get_url:
+    url: "https://releases.hashicorp.com/terraform/{{ terraform_version }}/terraform_{{ terraform_version }}_linux_amd64.zip"
+    dest: /tmp/terraform.zip
+  when: not tf_bin.stat.exists
+
+- name: Extract Terraform binary
+  ansible.builtin.unarchive:
+    src: /tmp/terraform.zip
+    dest: /usr/local/bin
+    remote_src: yes
+  when: not tf_bin.stat.exists
+
+- name: Check if AWS CLI is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/aws
+  register: aws_bin
+
+- name: Download AWS CLI installer
+  ansible.builtin.get_url:
+    url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+    dest: /tmp/awscliv2.zip
+  when: not aws_bin.stat.exists
+
+- name: Extract AWS CLI installer
+  ansible.builtin.unarchive:
+    src: /tmp/awscliv2.zip
+    dest: /tmp
+    remote_src: yes
+  when: not aws_bin.stat.exists
+
+- name: Execute AWS CLI installer
+  ansible.builtin.command: /tmp/aws/install -i /usr/local/aws-cli -b /usr/local/bin
+  when: not aws_bin.stat.exists
+
+- name: Check if VSCode is installed
+  ansible.builtin.stat:
+    path: /usr/bin/code
+  register: vscode_bin
+
+- name: Download VSCode package
+  ansible.builtin.get_url:
+    url: "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64"
+    dest: /tmp/vscode.deb
+  when: not vscode_bin.stat.exists
+
+- name: Install VSCode
+  ansible.builtin.apt:
+    deb: /tmp/vscode.deb
+  when: not vscode_bin.stat.exists
+
+- name: Install Ansible using pip
+  ansible.builtin.pip:
+    name: ansible
+    virtualenv: /opt/venv
+    virtualenv_command: python3 -m venv
+
+- name: Add Go to system-wide PATH
+  ansible.builtin.copy:
+    dest: /etc/profile.d/go_path.sh
+    content: "export PATH=$PATH:/usr/local/go/bin"
+    mode: "0644"
+
+- name: Clean up temporary files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
   with_items:
-    - /usr/local/go/bin
+    - /tmp/terraform.zip
+    - /tmp/awscliv2.zip
+    - /tmp/aws
+    - /tmp/vscode.deb
+    - /tmp/go.tar.gz

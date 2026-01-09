@@ -13,4 +13,4 @@
     dest: /home/vagrant/.ssh/authorized_keys
     owner: vagrant
     group: vagrant
-    mode: 'O600'
+    mode: '0600'

@@ -1,2 +1,3 @@
 ---
-# vars file for dev_tools
+go_version: "1.25.5"
+terraform_version: "1.14.3"
