@@ -12,5 +12,10 @@
     - vagrant_setup
     - docker
     - dev_tools
-
+    - devops_tools
   
+  tasks:
+    - name: Install Gnome Core
+      ansible.builtin.apt:
+        name: gnome-core
+        state: present

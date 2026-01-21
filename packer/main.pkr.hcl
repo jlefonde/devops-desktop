@@ -1,14 +1,18 @@
 packer {
-    required_plugins {
-      virtualbox = {
-        version = "~> 1"
-        source  = "github.com/hashicorp/virtualbox"
-      }
-      ansible = {
-        version = "~> 1"
-        source = "github.com/hashicorp/ansible"
-      }
+  required_plugins {
+    virtualbox = {
+      version = "~> 1"
+      source  = "github.com/hashicorp/virtualbox"
     }
+    ansible = {
+      version = "~> 1"
+      source = "github.com/hashicorp/ansible"
+    }
+    vagrant = {
+      version = "~> 1"
+      source = "github.com/hashicorp/vagrant"
+    }
+  }
 }
 
 source "virtualbox-iso" "debian" {
@@ -25,6 +29,9 @@ source "virtualbox-iso" "debian" {
   ssh_timeout = "10m"
   output_directory = var.output_directory
 
+  gfx_controller = "vmsvga"
+  gfx_vram_size = 128
+  gfx_accelerate_3d = true
   shutdown_command = "echo 'vagrant' | sudo -S shutdown -P now"
 
   http_directory = var.http_directory
@@ -32,20 +39,9 @@ source "virtualbox-iso" "debian" {
   boot_command = [
     "<esc><wait>",
     "install ",
+    "auto=true ",
+    "priority=critical ",
     "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
-    "debian-installer=en_US auto locale=en_US ",
-    "netcfg/get_hostname={{ .Name }} ",
-    "netcfg/get_domain=localdomain ",
-    "time/zone=UTC ",
-    "passwd/root-password=vagrant ",
-    "passwd/root-password-again=vagrant ",
-    "passwd/user-fullname=vagrant ",
-    "passwd/username=vagrant ",
-    "passwd/user-password=vagrant ",
-    "passwd/user-password-again=vagrant ",
-    "fb=false debconf/frontend=noninteractive ",
-    "keyboard-configuration/xkb-keymap=us  ",
-    "console-setup/ask_detect=false ",
     "<enter><wait>"
   ]
 }
@@ -57,12 +53,22 @@ build {
   provisioner "shell" {
     inline = [
       "echo 'vagrant ALL=(ALL:ALL) NOPASSWD:ALL' > /etc/sudoers.d/vagrant",
-      "chmod 0440 /etc/sudoers.d/vagrant"
+      "chmod 0440 /etc/sudoers.d/vagrant",
     ]
+    execute_command = "echo 'vagrant' | {{ .Vars }} su -c '{{ .Path }}'"
+  }
+
+  provisioner "shell" {
+    only = ["virtualbox-iso.debian"]
+    script = "../scripts/install-vbox-guest-additions.sh"
     execute_command = "echo 'vagrant' | {{ .Vars }} su -c '{{ .Path }}'"
   }
 
   provisioner "ansible" {
     playbook_file = "../ansible/main.yml"
+  }
+
+  post-processor "vagrant" {
+    output = "/home/jlefonde/goinfre/box/devops-{{.Provider}}.box"
   }
 }
