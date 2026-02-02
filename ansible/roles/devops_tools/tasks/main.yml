@@ -65,22 +65,6 @@
   ansible.builtin.command: /tmp/aws/install -i /usr/local/aws-cli -b /usr/local/bin
   when: not aws_bin.stat.exists
 
-- name: Check if VSCode is installed
-  ansible.builtin.stat:
-    path: /usr/bin/code
-  register: vscode_bin
-
-- name: Download VSCode package
-  ansible.builtin.get_url:
-    url: "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64"
-    dest: /tmp/vscode.deb
-  when: not vscode_bin.stat.exists
-
-- name: Install VSCode
-  ansible.builtin.apt:
-    deb: /tmp/vscode.deb
-  when: not vscode_bin.stat.exists
-
 - name: Install Ansible using pip
   ansible.builtin.pip:
     name: ansible
@@ -101,5 +85,4 @@
     - /tmp/terraform.zip
     - /tmp/awscliv2.zip
     - /tmp/aws
-    - /tmp/vscode.deb
     - /tmp/go.tar.gz

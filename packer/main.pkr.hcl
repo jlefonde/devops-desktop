@@ -23,18 +23,21 @@ source "virtualbox-iso" "debian" {
   ssh_username = "vagrant"
   ssh_password = "vagrant"
 
-  memory = 8192
-  cpus = 4
+  memory = 12288
+  cpus = 8
+  # TODO: remove
+  disk_size = 20480
 
   ssh_timeout = "10m"
-  output_directory = var.output_directory
+  output_directory = var.output_dir
+  vm_name = "devops-desktop"
 
   gfx_controller = "vmsvga"
   gfx_vram_size = 128
   gfx_accelerate_3d = true
   shutdown_command = "echo 'vagrant' | sudo -S shutdown -P now"
 
-  http_directory = var.http_directory
+  http_directory = var.http_dir
   boot_wait = "5s"
   boot_command = [
     "<esc><wait>",
@@ -51,10 +54,7 @@ build {
   sources = ["source.virtualbox-iso.debian"]
 
   provisioner "shell" {
-    inline = [
-      "echo 'vagrant ALL=(ALL:ALL) NOPASSWD:ALL' > /etc/sudoers.d/vagrant",
-      "chmod 0440 /etc/sudoers.d/vagrant",
-    ]
+    script = "../scripts/setup.sh"
     execute_command = "echo 'vagrant' | {{ .Vars }} su -c '{{ .Path }}'"
   }
 
@@ -65,10 +65,22 @@ build {
   }
 
   provisioner "ansible" {
-    playbook_file = "../ansible/main.yml"
+    playbook_file = "../ansible/packer.yml"
   }
 
+ post-processors {
   post-processor "vagrant" {
-    output = "/home/jlefonde/goinfre/box/devops-{{.Provider}}.box"
+    output = "${var.output_dir}/${var.box_name}-{{.Architecture}}-{{.Provider}}.box"
+    vagrantfile_template = "./Vagrantfile.tpl"
   }
+
+  post-processor "vagrant-registry" {
+    box_tag       = "${var.organization}/${var.box_name}"
+    version       = "${var.box_version}"
+    architecture  = "${var.box_architecture}"
+    client_id     = "${var.hcp_client_id}"
+    client_secret = "${var.hcp_client_secret}"
+    no_release    = true
+  }
+ }
 }

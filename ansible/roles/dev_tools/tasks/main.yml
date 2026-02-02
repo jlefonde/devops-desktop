@@ -17,7 +17,7 @@
     remote_src: yes
   when: not node_bin.stat.exists
 
-- name: Add Go to system-wide PATH
+- name: Add Node to system-wide PATH
   ansible.builtin.copy:
     dest: /etc/profile.d/node_path.sh
     content: "export PATH=$PATH:/usr/local/node/bin"

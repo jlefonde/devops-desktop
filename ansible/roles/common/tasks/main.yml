@@ -1,0 +1,40 @@
+---
+- name: Install basic utilities
+  ansible.builtin.apt:
+    name:
+      - vim
+      - git
+      - curl
+      - wget
+      - unzip
+      - ca-certificates
+      - gpg
+    state: present
+
+- name: Check if VSCode is installed
+  ansible.builtin.stat:
+    path: /usr/bin/code
+  register: vscode_bin
+
+- name: Download VSCode package
+  ansible.builtin.get_url:
+    url: "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64"
+    dest: /tmp/vscode.deb
+  when: not vscode_bin.stat.exists
+
+- name: Install VSCode
+  ansible.builtin.apt:
+    deb: /tmp/vscode.deb
+  when: not vscode_bin.stat.exists
+
+- name: Import Microsoft GPG key
+  ansible.builtin.apt_key:
+    url: https://packages.microsoft.com/keys/microsoft.asc
+    state: present
+  when: not vscode_bin.stat.exists
+
+- name: Clean up VSCode package
+  ansible.builtin.file:
+    path: /tmp/vscode.deb
+    state: absent
+  when: not vscode_bin.stat.exists
