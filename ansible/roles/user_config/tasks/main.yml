@@ -1,0 +1,38 @@
+- name: Configure dark theme
+  community.general.dconf:
+    key: "/org/gnome/desktop/interface/color-scheme"
+    value: "'prefer-dark'"
+    state: present
+
+- name: Configure terminal dark theme
+  community.general.dconf:
+    key: "/org/gnome/terminal/legacy/theme-variant"
+    value: "'dark'"
+    state: present
+
+- name: Set timezone to match host system
+  community.general.timezone:
+    name: "{{ lookup('ansible.builtin.pipe', 'timedatectl show --property=Timezone --value') }}"
+
+- name: Rename vagrant user
+  ansible.builtin.command:
+    cmd: "usermod -l {{ username }} {{ ansible_user_id }}"
+    ignore_errors: true
+
+- name: Update user
+  ansible.builtin.user:
+    name: "{{ username }}"
+    home: "/home/{{ username }}"
+    move_home: true
+    password: "{{ password | password_hash('sha512') }}"
+    generate_ssh_key: true
+    ssh_key_bits: 4096
+    ssh_key_type: ed25519
+    ssh_key_passphrase: "{{ ssh_passphrase }}"
+    ssh_key_file: ".ssh/id_ed25519"
+    shell: /bin/bash
+
+- name: Change root password
+  ansible.builtin.user:
+    name: root
+    password: "{{ root_password | password_hash('sha512') }}"

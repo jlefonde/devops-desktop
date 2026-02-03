@@ -10,3 +10,9 @@
 
   roles:
     - dev_tools
+    - role: user_config
+      vars: 
+        username: "{{ username }}"
+        password: "{{ password }}"
+        root_password: "{{ root_password }}"
+        ssh_passphrase: "{{ ssh_passphrase }}"
